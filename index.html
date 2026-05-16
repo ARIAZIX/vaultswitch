@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>vaultswitch-app</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#0e0f11;--s1:#15171a;--s2:#1c1f23;--s3:#23272d;--s4:#2a2e35;
+--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);
+--tx:#f0ede8;--mu:#8a8680;--fa:#3a3835;
+--pr:#4f98a3;--pr2:#76b6bf;--pr-g:rgba(79,152,163,.3);
+--rd:#e05565;--rd-g:rgba(224,85,101,.4);
+--go:#f7931a;--gn:#6daa45;--yw:#e8b428;
+--rr:.5rem;--rm:.9rem;--rl:1.2rem;--rx:1.6rem;--rf:999px;
+}
+[data-theme="light"]{
+--bg:#f0ede8;--s1:#f9f8f5;--s2:#f0ece6;--s3:#e8e3dc;--s4:#ddd8d0;
+--bd:rgba(0,0,0,.07);--bd2:rgba(0,0,0,.14);
+--tx:#1a1713;--mu:#6b6760;--fa:#ccc8c0;
+--pr:#016a70;--pr2:#0a888f;--pr-g:rgba(1,106,112,.22);
+--rd:#c73344;--rd-g:rgba(199,51,68,.25);
+--go:#c07a10;--gn:#3e7020;--yw:#c4920e;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* APP SHELL */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{
+  width:260px;flex-shrink:0;background:var(--s1);
+  border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;
+  transition:transform .3s;
+}
+.sb-head{padding:1.25rem 1.25rem .75rem;border-bottom:1px solid var(--bd);}
+.sb-brand{display:flex;align-items:center;gap:.65rem;font-weight:900;font-size:1.05rem;}
+.sb-brand svg{width:30px;height:30px;}
+.sb-version{font-size:.72rem;color:var(--mu);margin-top:.2rem;}
+.sb-nav{padding:.75rem .75rem;flex:1;overflow-y:auto;}
+.nav-group{margin-bottom:1.25rem;}
+.nav-group-label{font-size:.7rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;padding:.3rem .5rem;margin-bottom:.3rem;}
+.nav-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.7rem .85rem;border-radius:var(--rm);cursor:pointer;
+  font-size:.875rem;font-weight:500;color:var(--mu);
+  transition:all .18s;margin-bottom:.15rem;
+}
+.nav-item:hover{background:var(--s2);color:var(--tx);}
+.nav-item.active{background:color-mix(in oklab,var(--pr) 14%,var(--s2));color:var(--pr);font-weight:700;}
+.nav-item .ni-icon{width:30px;height:30px;border-radius:.6rem;display:grid;place-items:center;font-size:.95rem;flex-shrink:0;}
+.nav-item.active .ni-icon{background:color-mix(in oklab,var(--pr) 20%,transparent);}
+.nav-item .ni-badge{margin-left:auto;font-size:.7rem;font-weight:700;background:var(--rd);color:#fff;padding:.1rem .45rem;border-radius:var(--rf);}
+.sb-wallet{
+  padding:1rem;border-top:1px solid var(--bd);
+  background:var(--s2);margin:.75rem;border-radius:var(--rl);
+}
+.sw-label{font-size:.7rem;color:var(--mu);}
+.sw-addr{font-size:.72rem;font-family:monospace;color:var(--pr);margin:.2rem 0;}
+.sw-bal{font-size:1.1rem;font-weight:900;}
+
+/* TOPBAR */
+.topbar{
+  height:56px;border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;flex-shrink:0;background:var(--s1);
+}
+.tb-left{display:flex;align-items:center;gap:1rem;}
+.tb-title{font-size:1rem;font-weight:800;}
+.tb-sub{font-size:.78rem;color:var(--mu);}
+.tb-right{display:flex;align-items:center;gap:.75rem;}
+.tb-btn{
+  display:flex;align-items:center;gap:.5rem;
+  background:var(--s2);border:1px solid var(--bd);
+  border-radius:var(--rm);padding:.5rem .85rem;
+  font-size:.8rem;font-weight:600;cursor:pointer;
+  transition:all .18s;
+}
+.tb-btn:hover{border-color:var(--bd2);}
+.theme-toggle{width:36px;height:36px;border-radius:var(--rf);display:grid;place-items:center;background:var(--s2);border:1px solid var(--bd);cursor:pointer;font-size:1rem;}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.page{flex:1;overflow-y:auto;padding:1.5rem;}
+.page:not(.active){display:none;}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--rx);padding:1.25rem;}
+.card-sm{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rl);padding:1rem;}
+.row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;}
+.col{display:flex;flex-direction:column;}
+.g4{display:grid;gap:1rem;}
+.g6{display:grid;gap:1.5rem;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+label{font-size:.75rem;font-weight:600;color:var(--mu);}
+.val{font-size:1rem;font-weight:700;}
+.val-lg{font-size:1.5rem;font-weight:900;}
+.val-xl{font-size:2rem;font-weight:900;letter-spacing:-.02em;}
+.muted{color:var(--mu);font-size:.85rem;}
+.mono{font-family:monospace;}
+h3{font-size:.95rem;font-weight:800;margin-bottom:.5rem;}
+h2{font-size:1.3rem;font-weight:900;margin-bottom:.25rem;}
+
+/* BADGE / TAG */
+.tag{display:inline-flex;align-items:center;gap:.35rem;border-radius:var(--rf);padding:.28rem .65rem;font-size:.72rem;font-weight:700;}
+.tag-green{background:color-mix(in oklab,var(--gn) 18%,transparent);color:var(--gn);}
+.tag-red{background:color-mix(in oklab,var(--rd) 18%,transparent);color:var(--rd);}
+.tag-blue{background:color-mix(in oklab,var(--pr) 18%,transparent);color:var(--pr);}
+.tag-gold{background:color-mix(in oklab,var(--go) 18%,transparent);color:var(--go);}
+.tag-yellow{background:color-mix(in oklab,var(--yw) 18%,transparent);color:var(--yw);}
+
+/* BUTTONS */
+.btn{border:none;cursor:pointer;font:inherit;border-radius:var(--rl);font-weight:700;transition:all .2s;}
+.btn-pr{background:var(--pr);color:#fff;padding:.75rem 1.25rem;box-shadow:0 4px 20px var(--pr-g);}
+.btn-pr:hover{opacity:.85;transform:translateY(-1px);}
+.btn-rd{background:var(--rd);color:#fff;padding:.75rem 1.25rem;box-shadow:0 4px 20px var(--rd-g);}
+.btn-rd:hover{opacity:.9;transform:translateY(-1px);}
+.btn-gh{background:var(--s2);color:var(--tx);padding:.75rem 1.25rem;border:1px solid var(--bd2);}
+.btn-gh:hover{border-color:var(--pr);color:var(--pr);}
+.btn-full{width:100%;}
+.btn-sm{padding:.5rem .9rem;font-size:.8rem;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
+
+/* COIN ICON */
+.ci{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-weight:900;font-size:1rem;color:#fff;flex-shrink:0;}
+
+/* ASSET TABLE */
+.asset-row{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem 1.1rem;background:var(--s2);
+  border:1px solid var(--bd);border-radius:var(--rl);
+  transition:border-color .2s;
+}
+.asset-row:hover{border-color:var(--bd2);}
+.asset-row .ar-info{flex:1;}
+.ar-sym{font-size:.9rem;font-weight:800;}
+.ar-net{font-size:.75rem;color:var(--mu);}
+.ar-amt{text-align:right;}
+.ar-usd{font-size:.78rem;color:var(--mu);}
+
+/* PROGRESS BAR */
+.prog-wrap{background:var(--s3);border-radius:var(--rf);height:6px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:var(--rf);transition:width 1s ease;background:var(--pr);}
+
+/* STEP FLOW */
+.step-flow{display:flex;align-items:center;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.sf-step{
+  display:flex;align-items:center;gap:.5rem;
+  font-size:.8rem;font-weight:700;color:var(--mu);
+}
+.sf-step.active{color:var(--tx);}
+.sf-step.done{color:var(--gn);}
+.sf-num{width:26px;height:26px;border-radius:50%;border:2px solid var(--bd2);display:grid;place-items:center;font-size:.75rem;font-weight:900;}
+.sf-step.active .sf-num{background:var(--pr);border-color:var(--pr);color:#fff;}
+.sf-step.done .sf-num{background:var(--gn);border-color:var(--gn);color:#fff;}
+.sf-sep{flex:1;height:1px;background:var(--bd2);min-width:16px;}
+
+/* ROUTE CARD */
+.route-card{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1rem 1.1rem;border-radius:var(--rl);border:2px solid var(--bd);
+  cursor:pointer;transition:all .2s;margin-bottom:.65rem;
+}
+.route-card:hover{border-color:var(--bd2);}
+.route-card.selected{border-color:var(--pr);background:color-mix(in oklab,var(--pr) 9%,var(--s2));}
+.rc-name{font-size:.9rem;font-weight:800;}
+.rc-sub{font-size:.76rem;color:var(--mu);}
+.rc-btc{font-size:.9rem;font-weight:900;}
+.rc-fee{font-size:.76rem;color:var(--mu);}
+
+/* TX LIST */
+.tx-row{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem 1.1rem;background:var(--s2);border:1px solid var(--bd);
+  border-radius:var(--rl);margin-bottom:.65rem;
+}
+.tx-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:1rem;flex-shrink:0;}
+.tx-info{flex:1;}
+.tx-title{font-size:.875rem;font-weight:700;}
+.tx-meta{font-size:.75rem;color:var(--mu);}
+.tx-amt{text-align:right;}
+.tx-btc{font-size:.875rem;font-weight:900;}
+
+/* INPUT */
+.inp{
+  width:100%;background:var(--s2);border:1px solid var(--bd2);
+  border-radius:var(--rm);padding:.65rem .85rem;
+  color:var(--tx);font:inherit;font-size:.875rem;
+  outline:none;transition:border-color .18s;
+}
+.inp:focus{border-color:var(--pr);}
+
+/* TOGGLE */
+.toggle-wrap{display:flex;align-items:center;gap:.75rem;}
+.toggle{width:42px;height:24px;background:var(--s3);border-radius:var(--rf);cursor:pointer;position:relative;transition:background .2s;}
+.toggle.on{background:var(--pr);}
+.toggle::after{content:'';width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .2s;}
+.toggle.on::after{transform:translateX(18px);}
+
+/* LIVE TICKER */
+.ticker{display:flex;gap:.5rem;align-items:center;overflow:hidden;background:var(--s2);border-bottom:1px solid var(--bd);padding:.5rem 1.5rem;}
+.ticker-item{font-size:.75rem;color:var(--mu);white-space:nowrap;display:flex;gap:.4rem;align-items:center;}
+.ticker-item .up{color:var(--gn);}
+.ticker-item .dn{color:var(--rd);}
+
+/* TRANSFER ANIMATION */
+.transfer-anim{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:200;place-items:center;backdrop-filter:blur(6px);
+}
+.transfer-anim.show{display:grid;}
+.ta-box{
+  background:var(--s1);border:1px solid var(--bd2);border-radius:1.5rem;
+  padding:2.5rem;text-align:center;max-width:380px;width:90%;
+  box-shadow:0 40px 100px rgba(0,0,0,.5);
+}
+.ta-ring{
+  width:100px;height:100px;border-radius:50%;margin:0 auto 1.25rem;
+  border:3px solid var(--pr);display:grid;place-items:center;
+  font-size:2.5rem;position:relative;
+}
+.ta-ring.spinning::before{
+  content:'';position:absolute;inset:-3px;border-radius:50%;
+  border:3px solid transparent;border-top-color:var(--pr);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ta-ring.success{border-color:var(--gn);}
+.ta-ring.success::before{display:none;}
+.progress-steps{display:grid;gap:.65rem;margin-top:1.5rem;text-align:left;}
+.ps-item{display:flex;align-items:center;gap:.75rem;font-size:.85rem;}
+.ps-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--bd2);display:grid;place-items:center;font-size:.7rem;flex-shrink:0;}
+.ps-dot.active{border-color:var(--pr);background:var(--pr);color:#fff;animation:pulse-dot 1s infinite;}
+.ps-dot.done{border-color:var(--gn);background:var(--gn);color:#fff;}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 var(--pr-g)}50%{box-shadow:0 0 0 6px transparent}}
+
+/* NOTIFICATION */
+.notif{
+  position:fixed;top:1rem;right:1rem;z-index:300;
+  background:var(--s1);border:1px solid var(--bd2);border-radius:var(--rl);
+  padding:.85rem 1.1rem;max-width:320px;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+  transform:translateX(120%);transition:transform .4s cubic-bezier(.16,1,.3,1);
+  display:flex;gap:.75rem;align-items:flex-start;
+}
+.notif.show{transform:none;}
+.notif-icon{font-size:1.2rem;flex-shrink:0;}
+.notif-title{font-size:.85rem;font-weight:700;}
+.notif-sub{font-size:.78rem;color:var(--mu);}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);}
+  .sidebar.open{transform:none;}
+  .grid2,.grid3{grid-template-columns:1fr;}
+  .topbar{padding:0 1rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-brand">
+        <svg viewBox="0 0 30 30" fill="none">
+          <rect x="2" y="2" width="26" height="26" rx="9" stroke="var(--pr)" stroke-width="1.5" opacity=".5"/>
+          <path d="M8 15.5l4.5 4.5 9.5-12" stroke="var(--pr)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        VaultSwitch
+      </div>
+      <div class="sb-version">Demo v1.0 · Virtual Wallet</div>
+    </div>
+    <div class="sb-nav">
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+        <div class="nav-item active" data-page="dashboard">
+          <div class="ni-icon">📊</div>Dashboard
+        </div>
+        <div class="nav-item" data-page="assets">
+          <div class="ni-icon">💰</div>My Assets
+        </div>
+        <div class="nav-item" data-page="panic">
+          <div class="ni-icon">⚡</div>Panic Convert
+          <span class="ni-badge" id="panicBadge">!</span>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Account</div>
+        <div class="nav-item" data-page="history">
+          <div class="ni-icon">🕐</div>History
+        </div>
+        <div class="nav-item" data-page="settings">
+          <div class="ni-icon">⚙️</div>Settings
+        </div>
+      </div>
+    </div>
+    <div class="sb-wallet">
+      <div class="sw-label">BTC Vault Address</div>
+      <div class="sw-addr mono" id="sbAddr">bc1q...loading</div>
+      <div class="sw-bal" id="sbBal">Loading...</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TICKER -->
+    <div class="ticker" id="tickerBar"></div>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="tb-left">
+        <button class="tb-btn" id="menuBtn" style="display:none;">☰</button>
+        <div>
+          <div class="tb-title" id="pageTitle">Dashboard</div>
+          <div class="tb-sub" id="pageSub">Virtual wallet demo</div>
+        </div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-btn" id="alertBtn">🔔 <span id="alertCount">0</span> alerts</div>
+        <div class="theme-toggle" id="themeBtn">🌙</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="g6">
+        <!-- KPI row -->
+        <div class="grid3" style="grid-template-columns:2fr 1fr 1fr;">
+          <div class="card">
+            <label>Total Portfolio Value</label>
+            <div class="val-xl" id="totalUSD">$18,420.00</div>
+            <div style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem;">
+              <span class="tag tag-green" id="dayChange">+2.1% today</span>
+              <span class="muted">Updated live</span>
+            </div>
+          </div>
+          <div class="card">
+            <label>BTC in Vault</label>
+            <div class="val-lg" id="btcVault">0.0000 ₿</div>
+            <div class="muted" style="margin-top:.4rem;" id="btcUSD">≈ $0</div>
+          </div>
+          <div class="card">
+            <label>Transfers Done</label>
+            <div class="val-lg" id="txCount">0</div>
+            <div class="muted" style="margin-top:.4rem;">Since demo start</div>
+          </div>
+        </div>
+
+        <!-- Assets + Risk -->
+        <div class="grid2">
+          <div class="card g4">
+            <div class="row"><h3>Protected Assets</h3><span class="tag tag-blue" id="selectedCount">3 selected</span></div>
+            <div id="dashAssets"></div>
+            <button class="btn btn-rd btn-full" onclick="goPage('panic')">⚡ Panic Convert Now</button>
+          </div>
+          <div class="card g4">
+            <div class="row"><h3>Risk Monitor</h3><span class="tag tag-green">Live</span></div>
+            <div id="riskMonitor"></div>
+            <div class="card-sm" style="margin-top:.25rem;">
+              <label>BTC Vault</label>
+              <div class="mono" style="font-size:.78rem;margin-top:.25rem;color:var(--pr);" id="vaultAddrDisplay">bc1q...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price Chart (simple visual) -->
+        <div class="card">
+          <div class="row" style="margin-bottom:1rem;"><h3>USDT/BTC Rate — Last 24h</h3><span class="tag tag-gold" id="liveRate">Loading...</span></div>
+          <canvas id="miniChart" width="800" height="100" style="width:100%;border-radius:.5rem;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSETS PAGE -->
+    <div class="page" id="page-assets">
+      <div class="g6">
+        <div class="card">
+          <div class="row" style="margin-bottom:1.25rem;">
+            <h2>My Virtual Wallet</h2>
+            <button class="btn btn-gh btn-sm" onclick="resetWallet()">🔄 Reset Demo</button>
+          </div>
+          <div id="fullAssets"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:1rem;">Allocation</h3>
+          <canvas id="pieChart" width="400" height="180" style="width:100%;max-height:180px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANIC PAGE -->
+    <div class="page" id="page-panic">
+      <div class="g6" id="panicContent"></div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div class="page" id="page-history">
+      <div class="card">
+        <div class="row" style="margin-bottom:1.25rem;">
+          <h2>Transfer History</h2>
+          <span class="tag tag-blue" id="historyCount">0 transfers</span>
+        </div>
+        <div id="historyList"><div class="muted" style="padding:2rem;text-align:center;">No transfers yet. Run a Panic Convert to see history.</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-settings">
+      <div class="grid2">
+        <div class="card g4">
+          <h2>Vault Settings</h2>
+          <div>
+            <label>BTC Destination Address</label>
+            <input class="inp" id="vaultInp" style="margin-top:.4rem;" value="bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"/>
+            <button class="btn btn-pr btn-sm" style="margin-top:.65rem;" onclick="saveVault()">Save Address</button>
+          </div>
+          <div>
+            <label>Max Slippage (%)</label>
+            <input class="inp" id="slippageInp" type="number" min=".1" max="5" step=".1" value="0.8" style="margin-top:.4rem;"/>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle on" id="alertToggle" onclick="this.classList.toggle('on')"></div>
+            <div><div style="font-size:.875rem;font-weight:600;">Risk Alerts</div><div class="muted" style="font-size:.78rem;">Notify when stablecoin risk changes</div></div>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle on" id="faceIDToggle" onclick="this.classList.toggle('on')"></div>
+            <div><div style="font-size:.875rem;font-weight:600;">Require Face ID</div><div class="muted" style="font-size:.78rem;">Required for every transfer</div></div>
+          </div>
+        </div>
+        <div class="card g4">
+          <h2>Demo Info</h2>
+          <div class="card-sm g4">
+            <div class="row"><span class="muted">Model</span><strong>Non-custodial</strong></div>
+            <div class="row"><span class="muted">Keys</span><strong>Device-only</strong></div>
+            <div class="row"><span class="muted">Routes</span><strong>3 swap providers</strong></div>
+            <div class="row"><span class="muted">Version</span><strong>Demo v1.0</strong></div>
+          </div>
+          <button class="btn btn-gh btn-full" onclick="resetWallet()">🔄 Reset Virtual Wallet</button>
+          <div class="muted" style="font-size:.75rem;">This is a fully virtual demo. No real transactions occur.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TRANSFER ANIMATION OVERLAY -->
+<div class="transfer-anim" id="transferAnim">
+  <div class="ta-box">
+    <div class="ta-ring spinning" id="taRing"><span id="taEmoji">⚡</span></div>
+    <div style="font-size:1.1rem;font-weight:900;margin-bottom:.4rem;" id="taTitle">Processing Transfer</div>
+    <div class="muted" style="font-size:.85rem;" id="taSub">Please wait...</div>
+    <div class="progress-steps" id="taSteps"></div>
+    <button class="btn btn-pr btn-full" id="taDoneBtn" style="display:none;margin-top:1.25rem;" onclick="closeTa()">View Receipt</button>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif">
+  <div class="notif-icon" id="notifIcon">✅</div>
+  <div>
+    <div class="notif-title" id="notifTitle">Transfer complete</div>
+    <div class="notif-sub" id="notifSub">BTC landed in your vault</div>
+  </div>
+</div>
+
+<script>
+// ===================== STATE =====================
+const state = {
+  theme: 'dark',
+  vaultAddr: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+  slippage: 0.8,
+  btcVault: 0,
+  txCount: 0,
+  history: [],
+  alertCount: 0,
+  btcPrice: 94820,
+  panicStep: 0, // 0=select, 1=routes, 2=confirm, 3=done
+  selectedAssets: new Set(['USDT','USDC','ETH']),
+  chosenRoute: 0,
+  assets: [
+    { sym:'USDT', name:'Tether USD',   net:'ERC-20',  amt:9500,  price:1,       color:'#26a17b', icon:'T' },
+    { sym:'USDC', name:'USD Coin',     net:'Base',    amt:5000,  price:1,       color:'#2775ca', icon:'$' },
+    { sym:'ETH',  name:'Ethereum',     net:'Mainnet', amt:1.20,  price:3266.67, color:'#7867ff', icon:'Ξ' },
+  ],
+  routes: [
+    { name:'Route A – Max Output',   btc:null, feeP:0.73, min:7,  best:true  },
+    { name:'Route B – Faster',       btc:null, feeP:0.61, min:4,  best:false },
+    { name:'Route C – Backup',       btc:null, feeP:0.48, min:12, best:false },
+  ],
+};
+
+function totalUSD() {
+  return state.assets.reduce((s,a) => s + a.amt * a.price, 0);
+}
+function selectedUSD() {
+  return state.assets.filter(a => state.selectedAssets.has(a.sym)).reduce((s,a) => s + a.amt * a.price, 0);
+}
+function calcRoutes() {
+  const usd = selectedUSD();
+  state.routes.forEach(r => { r.btc = (usd * (1 - r.feeP/100)) / state.btcPrice; });
+}
+
+// ===================== NAVIGATION =====================
+const pages = { dashboard:'Dashboard', assets:'My Assets', panic:'Panic Convert', history:'Transfer History', settings:'Settings' };
+const subs  = { dashboard:'Virtual wallet overview', assets:'Manage your demo assets', panic:'Emergency BTC conversion', history:'All past transfers', settings:'Configure vault & preferences' };
+
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector('#page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === id));
+  document.getElementById('pageTitle').textContent = pages[id];
+  document.getElementById('pageSub').textContent   = subs[id];
+  if (id === 'panic')   renderPanic();
+  if (id === 'assets')  renderAssets();
+  if (id === 'history') renderHistory();
+  if (id === 'dashboard') renderDashboard();
+}
+
+document.querySelectorAll('.nav-item[data-page]').forEach(n => {
+  n.addEventListener('click', () => goPage(n.dataset.page));
+});
+
+// ===================== RENDER DASHBOARD =====================
+function renderDashboard() {
+  const tot = totalUSD();
+  document.getElementById('totalUSD').textContent = '$' + tot.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('btcVault').textContent = state.btcVault.toFixed(5) + ' ₿';
+  document.getElementById('btcUSD').textContent = '≈ $' + (state.btcVault * state.btcPrice).toLocaleString('en-US', {maximumFractionDigits:0});
+  document.getElementById('txCount').textContent = state.txCount;
+  document.getElementById('sbBal').textContent = '$' + tot.toLocaleString('en-US', {maximumFractionDigits:0});
+  document.getElementById('sbAddr').textContent = state.vaultAddr.slice(0,8) + '...' + state.vaultAddr.slice(-4);
+  document.getElementById('vaultAddrDisplay').textContent = state.vaultAddr.slice(0,10) + '...' + state.vaultAddr.slice(-6);
+  document.getElementById('alertCount').textContent = state.alertCount;
+  document.getElementById('selectedCount').textContent = state.selectedAssets.size + ' selected';
+  document.getElementById('liveRate').textContent = '1 BTC = $' + state.btcPrice.toLocaleString();
+
+  // Dash assets
+  const da = document.getElementById('dashAssets');
+  da.innerHTML = state.assets.map(a => `
+    <div class="asset-row" style="margin-bottom:.55rem;">
+      <div class="ci" style="background:${a.color};">${a.icon}</div>
+      <div class="ar-info"><div class="ar-sym">${a.sym}</div><div class="ar-net">${a.net}</div></div>
+      <div class="ar-amt">
+        <div style="font-weight:800;font-size:.9rem;">${a.amt.toLocaleString('en-US',{maximumFractionDigits:4})} ${a.sym}</div>
+        <div class="ar-usd">$${(a.amt*a.price).toLocaleString('en-US',{maximumFractionDigits:0})}</div>
+      </div>
+    </div>`).join('');
+
+  // Risk monitor
+  const risks = [
+    { sym:'USDT', label:'Tether peg',   val:99.97, status:'green' },
+    { sym:'USDC', label:'Circle peg',   val:100.01,status:'green' },
+    { sym:'ETH',  label:'Volatility',   val:62,    status:'yellow', max:100 },
+  ];
+  document.getElementById('riskMonitor').innerHTML = risks.map(r => `
+    <div style="margin-bottom:.85rem;">
+      <div class="row" style="margin-bottom:.3rem;">
+        <span style="font-size:.8rem;font-weight:700;">${r.label}</span>
+        <span class="tag tag-${r.status}" style="font-size:.7rem;">${r.val}${r.status==='yellow'?'/100':''}${r.status!=='yellow'?'¢':''}</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:${r.status==='yellow'?r.val+'%':'95%'};background:var(--${r.status==='green'?'pr':r.status==='yellow'?'yw':'rd'});"></div></div>
+    </div>`).join('');
+
+  drawChart();
+}
+
+// ===================== RENDER ASSETS =====================
+function renderAssets() {
+  const el = document.getElementById('fullAssets');
+  el.innerHTML = state.assets.map(a => `
+    <div class="asset-row" style="margin-bottom:.65rem;">
+      <div class="ci" style="background:${a.color};">${a.icon}</div>
+      <div class="ar-info">
+        <div class="ar-sym">${a.sym} <span class="muted" style="font-weight:400;font-size:.8rem;">— ${a.name}</span></div>
+        <div class="ar-net">${a.net} · $${a.price.toLocaleString('en-US',{maximumFractionDigits:4})} / ${a.sym}</div>
+      </div>
+      <div class="ar-amt">
+        <div style="font-weight:800;">${a.amt.toLocaleString('en-US',{maximumFractionDigits:6})} ${a.sym}</div>
+        <div class="ar-usd">$${(a.amt*a.price).toLocaleString('en-US',{maximumFractionDigits:2})}</div>
+      </div>
+    </div>`).join('');
+  drawPie();
+}
+
+// ===================== PANIC FLOW =====================
+function renderPanic() {
+  calcRoutes();
+  const container = document.getElementById('panicContent');
+  if (state.panicStep === 0) renderStep0(container);
+  else if (state.panicStep === 1) renderStep1(container);
+  else if (state.panicStep === 2) renderStep2(container);
+  else if (state.panicStep === 3) renderStep3(container);
+}
+
+function stepFlow(cur) {
+  return `<div class="step-flow">
+    ${['Select Assets','Choose Route','Confirm','Done'].map((s,i) => `
+      <div class="sf-step ${i<cur?'done':i===cur?'active':''}">
+        <div class="sf-num">${i<cur?'✓':i+1}</div>${s}
+      </div>${i<3?'<div class="sf-sep"></div>':''}`).join('')}
+  </div>`;
+}
+
+function renderStep0(c) {
+  document.getElementById('panicBadge').style.display = '';
+  c.innerHTML = `
+  <div class="card">
+    ${stepFlow(0)}
+    <h2 style="margin-bottom:.25rem;">Select Assets to Convert</h2>
+    <div class="muted" style="margin-bottom:1.25rem;">Choose which assets to convert to BTC. All go to your vault address.</div>
+    <div id="assetToggles"></div>
+    <div class="card-sm" style="margin-top:1rem;margin-bottom:1rem;">
+      <div class="row"><span class="muted">Destination</span><span class="mono" style="font-size:.8rem;color:var(--pr);">${state.vaultAddr.slice(0,10)}...${state.vaultAddr.slice(-6)}</span></div>
+      <div class="row" style="margin-top:.5rem;"><span class="muted">Max slippage</span><span>${state.slippage}%</span></div>
+      <div class="row" style="margin-top:.5rem;"><span class="muted">Est. time</span><span>~7 min</span></div>
+      <div class="row" style="margin-top:.65rem;border-top:1px solid var(--bd);padding-top:.65rem;">
+        <span style="font-weight:700;">Total to convert</span>
+        <span class="val" id="selectedTotal" style="color:var(--pr);">$0</span>
+      </div>
+    </div>
+    <button class="btn btn-rd btn-full" id="toStep1Btn">View Conversion Routes →</button>
+  </div>`;
+  
+  const tog = document.getElementById('assetToggles');
+  state.assets.forEach(a => {
+    const sel = state.selectedAssets.has(a.sym);
+    const div = document.createElement('div');
+    div.className = 'asset-row';
+    div.style.cssText = 'margin-bottom:.55rem;cursor:pointer;';
+    div.innerHTML = `
+      <div class="ci" style="background:${a.color};">${a.icon}</div>
+      <div class="ar-info"><div class="ar-sym">${a.sym}</div><div class="ar-net">${a.net}</div></div>
+      <div class="ar-amt"><div style="font-weight:800;">${a.amt.toLocaleString('en-US',{maximumFractionDigits:4})} ${a.sym}</div><div class="ar-usd">$${(a.amt*a.price).toLocaleString('en-US',{maximumFractionDigits:0})}</div></div>
+      <div class="toggle ${sel?'on':''}" id="tog-${a.sym}"></div>`;
+    div.addEventListener('click', () => {
+      if (state.selectedAssets.has(a.sym)) state.selectedAssets.delete(a.sym);
+      else state.selectedAssets.add(a.sym);
+      document.getElementById('tog-'+a.sym).classList.toggle('on', state.selectedAssets.has(a.sym));
+      document.getElementById('selectedTotal').textContent = '$' + selectedUSD().toLocaleString('en-US',{maximumFractionDigits:0});
+    });
+    tog.appendChild(div);
+  });
+  document.getElementById('selectedTotal').textContent = '$' + selectedUSD().toLocaleString('en-US',{maximumFractionDigits:0});
+  document.getElementById('toStep1Btn').addEventListener('click', () => {
+    if (state.selectedAssets.size === 0) { notify('⚠️','No assets selected','Please select at least one asset.'); return; }
+    state.panicStep = 1; renderPanic();
+  });
+}
+
+function renderStep1(c) {
+  calcRoutes();
+  c.innerHTML = `
+  <div class="card">
+    ${stepFlow(1)}
+    <h2 style="margin-bottom:.25rem;">Choose Conversion Route</h2>
+    <div class="muted" style="margin-bottom:1.25rem;">Select the best route for your transfer. Net BTC is what you receive.</div>
+    ${state.routes.map((r,i) => `
+      <div class="route-card ${i===state.chosenRoute?'selected':''}" id="rc-${i}" onclick="selectRoute(${i})">
+        <div>
+          <div class="rc-name">${r.best?'<span class="tag tag-green" style="margin-right:.5rem;font-size:.68rem;">BEST</span>':''}${r.name}</div>
+          <div class="rc-sub">Est. ${r.min} min · Swap fee ${r.feeP}%</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="rc-btc">${r.btc.toFixed(6)} ₿</div>
+          <div class="rc-fee">≈ $${(r.btc*state.btcPrice).toLocaleString('en-US',{maximumFractionDigits:0})}</div>
+        </div>
+      </div>`).join('')}
+    <div class="card-sm" style="margin:.5rem 0 1rem;">
+      <div class="row"><span class="muted">You send</span><span>$${selectedUSD().toLocaleString('en-US',{maximumFractionDigits:0})} in ${[...state.selectedAssets].join(' + ')}</span></div>
+      <div class="row" style="margin-top:.5rem;"><span class="muted">You receive</span><span style="font-weight:900;color:var(--gn);" id="bestBtcDisplay">${state.routes[state.chosenRoute].btc.toFixed(6)} ₿</span></div>
+    </div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-gh" onclick="state.panicStep=0;renderPanic()">← Back</button>
+      <button class="btn btn-pr" style="flex:1;" onclick="state.panicStep=2;renderPanic()">Review & Confirm →</button>
+    </div>
+  </div>`;
+}
+
+function selectRoute(i) {
+  state.chosenRoute = i;
+  document.querySelectorAll('.route-card').forEach((c,j) => c.classList.toggle('selected', j===i));
+  const btcEl = document.getElementById('bestBtcDisplay');
+  if (btcEl) btcEl.textContent = state.routes[i].btc.toFixed(6) + ' ₿';
+}
+
+function renderStep2(c) {
+  const r = state.routes[state.chosenRoute];
+  const selectedList = state.assets.filter(a => state.selectedAssets.has(a.sym));
+  c.innerHTML = `
+  <div class="card">
+    ${stepFlow(2)}
+    <h2 style="margin-bottom:.25rem;">Confirm Transfer</h2>
+    <div class="muted" style="margin-bottom:1.25rem;">Review all details carefully. This action will deduct assets from your virtual wallet.</div>
+    
+    <div class="card-sm g4" style="margin-bottom:1rem;">
+      <div style="font-size:.8rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;">Converting</div>
+      ${selectedList.map(a => `<div class="row"><span class="muted">${a.sym} (${a.net})</span><span style="font-weight:700;">${a.amt.toLocaleString('en-US',{maximumFractionDigits:4})} ${a.sym} = $${(a.amt*a.price).toLocaleString('en-US',{maximumFractionDigits:0})}</span></div>`).join('')}
+    </div>
+    
+    <div class="card-sm g4" style="margin-bottom:1rem;border:2px solid var(--pr);">
+      <div style="font-size:.8rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;">You Receive</div>
+      <div class="row"><span class="muted">Net BTC output</span><span style="font-size:1.3rem;font-weight:900;color:var(--gn);">${r.btc.toFixed(6)} ₿</span></div>
+      <div class="row"><span class="muted">USD equivalent</span><span style="font-weight:700;">≈ $${(r.btc*state.btcPrice).toLocaleString('en-US',{maximumFractionDigits:0})}</span></div>
+      <div class="row"><span class="muted">Destination</span><span class="mono" style="font-size:.8rem;color:var(--pr);">${state.vaultAddr.slice(0,10)}...${state.vaultAddr.slice(-6)}</span></div>
+    </div>
+
+    <div class="card-sm g4" style="margin-bottom:1.25rem;">
+      <div class="row"><span class="muted">Route</span><span>${r.name}</span></div>
+      <div class="row"><span class="muted">Fee</span><span>${r.feeP}%</span></div>
+      <div class="row"><span class="muted">Est. time</span><span>~${r.min} minutes</span></div>
+      <div class="row"><span class="muted">Total sent</span><span style="font-weight:800;">$${selectedUSD().toLocaleString('en-US',{maximumFractionDigits:0})}</span></div>
+    </div>
+
+    <div style="background:color-mix(in oklab,var(--rd) 8%,var(--s2));border:1px solid color-mix(in oklab,var(--rd) 25%,transparent);border-radius:var(--rm);padding:.85rem;margin-bottom:1.25rem;font-size:.82rem;color:var(--mu);">
+      🔐 In a real app, Face ID confirmation would be required here. Tap Authorize to simulate.
+    </div>
+
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-gh" onclick="state.panicStep=1;renderPanic()">← Back</button>
+      <button class="btn btn-rd" style="flex:1;" onclick="runTransfer()">🔐 Authorize Transfer</button>
+    </div>
+  </div>`;
+}
+
+function renderStep3(c) {
+  const last = state.history[0];
+  c.innerHTML = `
+  <div class="card" style="text-align:center;">
+    ${stepFlow(3)}
+    <div style="width:90px;height:90px;border-radius:50%;background:color-mix(in oklab,var(--gn) 15%,var(--s2));border:3px solid var(--gn);display:grid;place-items:center;font-size:2.5rem;margin:0 auto 1.25rem;">✅</div>
+    <h2 style="color:var(--gn);">Transfer Complete!</h2>
+    <div class="muted" style="margin:.5rem auto 2rem;max-width:44ch;">Your virtual assets have been converted and sent to the BTC vault address.</div>
+    <div class="card-sm g4" style="text-align:left;margin-bottom:1.5rem;">
+      <div class="row"><span class="muted">Tracking ID</span><strong>${last.id}</strong></div>
+      <div class="row"><span class="muted">BTC Received</span><strong style="color:var(--gn);">${last.btc.toFixed(6)} ₿</strong></div>
+      <div class="row"><span class="muted">USD Value</span><strong>≈ $${(last.btc*state.btcPrice).toLocaleString('en-US',{maximumFractionDigits:0})}</strong></div>
+      <div class="row"><span class="muted">Destination</span><span class="mono" style="font-size:.78rem;color:var(--pr);">${state.vaultAddr.slice(0,10)}...${state.vaultAddr.slice(-6)}</span></div>
+      <div class="row"><span class="muted">Status</span><span class="tag tag-green">Confirmed</span></div>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:center;">
+      <button class="btn btn-gh" onclick="state.panicStep=0;renderPanic()">New Transfer</button>
+      <button class="btn btn-pr" onclick="goPage('history')">View History</button>
+    </div>
+  </div>`;
+  document.getElementById('panicBadge').style.display = 'none';
+}
+
+// ===================== TRANSFER =====================
+function runTransfer() {
+  const r = state.routes[state.chosenRoute];
+  const steps = [
+    { label:'Authenticating with Face ID…',  t:600  },
+    { label:'Fetching live exchange rate…',   t:900  },
+    { label:'Broadcasting swap transaction…', t:1400 },
+    { label:'Waiting for confirmations…',     t:1000 },
+    { label:'Sending BTC to vault…',          t:800  },
+    { label:'Receipt generated!',             t:0    },
+  ];
+  const anim = document.getElementById('transferAnim');
+  const ring = document.getElementById('taRing');
+  const taSteps = document.getElementById('taSteps');
+  const taTitle = document.getElementById('taTitle');
+  const taSub   = document.getElementById('taSub');
+  const emoji   = document.getElementById('taEmoji');
+  ring.className = 'ta-ring spinning';
+  emoji.textContent = '⚡';
+  taTitle.textContent = 'Processing Transfer';
+  taSub.textContent = `Converting to ${r.btc.toFixed(6)} ₿`;
+  document.getElementById('taDoneBtn').style.display = 'none';
+  taSteps.innerHTML = steps.map((s,i) => `<div class="ps-item" id="ps-${i}"><div class="ps-dot" id="pd-${i}"></div><span style="color:var(--mu);">${s.label}</span></div>`).join('');
+  anim.classList.add('show');
+  let delay = 400;
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      if (i > 0) document.getElementById('pd-'+(i-1)).className = 'ps-dot done';
+      const dot = document.getElementById('pd-'+i);
+      dot.className = 'ps-dot active';
+      dot.textContent = '';
+      document.getElementById('ps-'+i).querySelector('span').style.color = 'var(--tx)';
+    }, delay);
+    delay += s.t;
+  });
+  setTimeout(() => {
+    document.getElementById('pd-'+(steps.length-1)).className = 'ps-dot done';
+    ring.className = 'ta-ring success';
+    emoji.textContent = '✅';
+    taTitle.textContent = 'Transfer Complete!';
+    taSub.textContent = r.btc.toFixed(6) + ' ₿ sent to your vault';
+    document.getElementById('taDoneBtn').style.display = 'block';
+    // Update state
+    state.btcVault += r.btc;
+    state.txCount++;
+    state.selectedAssets.forEach(sym => {
+      const a = state.assets.find(x => x.sym === sym);
+      if (a) a.amt = 0;
+    });
+    const tid = 'VS-' + Math.floor(1000+Math.random()*8999) + '-' + Math.floor(10+Math.random()*89);
+    state.history.unshift({ id:tid, btc:r.btc, usd:r.btc*state.btcPrice, route:r.name, fee:r.feeP, dest:state.vaultAddr, time:new Date(), status:'Confirmed', assets:[...state.selectedAssets] });
+    state.selectedAssets.clear();
+    state.panicStep = 3;
+    renderDashboard();
+    notify('✅','BTC Transfer Sent!', r.btc.toFixed(5) + ' ₿ is in your vault.');
+    state.alertCount++;
+  }, delay);
+}
+
+function closeTa() {
+  document.getElementById('transferAnim').classList.remove('show');
+  renderPanic();
+}
+
+// ===================== HISTORY =====================
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  document.getElementById('historyCount').textContent = state.history.length + ' transfer' + (state.history.length!==1?'s':'');
+  if (!state.history.length) { el.innerHTML = '<div class="muted" style="padding:2rem;text-align:center;">No transfers yet.</div>'; return; }
+  el.innerHTML = state.history.map(tx => `
+    <div class="tx-row">
+      <div class="tx-icon" style="background:color-mix(in oklab,var(--gn) 15%,var(--s3));">₿</div>
+      <div class="tx-info">
+        <div class="tx-title">${tx.id}</div>
+        <div class="tx-meta">${tx.route} · ${tx.time.toLocaleTimeString()} · ${tx.assets.join(', ')} → BTC</div>
+      </div>
+      <div class="tx-amt">
+        <div class="tx-btc" style="color:var(--gn);">+${tx.btc.toFixed(5)} ₿</div>
+        <div class="muted" style="font-size:.75rem;">≈ $${tx.usd.toLocaleString('en-US',{maximumFractionDigits:0})}</div>
+      </div>
+      <span class="tag tag-green" style="margin-left:.5rem;">${tx.status}</span>
+    </div>`).join('');
+}
+
+// ===================== SETTINGS =====================
+function saveVault() {
+  const v = document.getElementById('vaultInp').value.trim();
+  if (!v) return;
+  state.vaultAddr = v;
+  state.slippage = parseFloat(document.getElementById('slippageInp').value) || 0.8;
+  notify('✅','Settings Saved','Vault address updated.');
+  renderDashboard();
+}
+
+function resetWallet() {
+  state.assets[0].amt = 9500;
+  state.assets[1].amt = 5000;
+  state.assets[2].amt = 1.20;
+  state.btcVault = 0;
+  state.txCount  = 0;
+  state.history  = [];
+  state.panicStep = 0;
+  state.selectedAssets = new Set(['USDT','USDC','ETH']);
+  renderDashboard();
+  renderAssets();
+  notify('🔄','Wallet Reset','Demo wallet restored to initial state.');
+}
+
+// ===================== CHARTS =====================
+function drawChart() {
+  const canvas = document.getElementById('miniChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth * 2, H = 200;
+  canvas.width = W; canvas.height = H;
+  const pts = 48;
+  const base = 1/94820;
+  const data = Array.from({length:pts}, (_,i) => base + (Math.sin(i*.7)+Math.sin(i*.3)*.4+Math.random()*.2)*base*.002);
+  const mn = Math.min(...data), mx = Math.max(...data);
+  const x = i => (i/(pts-1)) * W;
+  const y = v => H - 10 - ((v-mn)/(mx-mn||1)) * (H-20);
+  ctx.clearRect(0,0,W,H);
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(79,152,163,.22)');
+  grad.addColorStop(1,'rgba(79,152,163,0)');
+  ctx.beginPath();
+  data.forEach((v,i) => i===0?ctx.moveTo(x(i),y(v)):ctx.lineTo(x(i),y(v)));
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath();
+  data.forEach((v,i) => i===0?ctx.moveTo(x(i),y(v)):ctx.lineTo(x(i),y(v)));
+  ctx.strokeStyle = 'var(--pr)'; ctx.lineWidth = 2.5; ctx.stroke();
+}
+
+function drawPie() {
+  const canvas = document.getElementById('pieChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth*2, H = 360;
+  canvas.width=W; canvas.height=H;
+  const tot = totalUSD();
+  const slices = state.assets.map(a => ({ label:a.sym, val:a.amt*a.price, color:a.color }));
+  let angle = -Math.PI/2;
+  const cx = W*.28, cy = H/2, rad = H/2-20;
+  slices.forEach(s => {
+    const sweep = (s.val/tot)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,rad,angle,angle+sweep);
+    ctx.closePath(); ctx.fillStyle=s.color; ctx.fill();
+    angle += sweep;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,rad*.55,0,Math.PI*2);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--s2').trim()||'#1c1f23';
+  ctx.fill();
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--tx').trim()||'#f0ede8';
+  ctx.textAlign='center'; ctx.font=`bold ${H*.09}px Inter`;
+  ctx.fillText('$'+tot.toLocaleString('en-US',{maximumFractionDigits:0}),cx,cy+H*.035);
+  ctx.font=`${H*.065}px Inter`;
+  ctx.fillStyle = '#8a8680';
+  ctx.fillText('total',cx,cy+H*.11);
+  let ly = 40;
+  slices.forEach(s => {
+    ctx.fillStyle=s.color; ctx.fillRect(W*.58,ly,22,22);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--tx').trim();
+    ctx.textAlign='left'; ctx.font=`bold ${H*.072}px Inter`;
+    ctx.fillText(s.label, W*.58+30, ly+16);
+    ctx.fillStyle='#8a8680'; ctx.font=`${H*.065}px Inter`;
+    ctx.fillText('$'+(s.val).toLocaleString('en-US',{maximumFractionDigits:0}), W*.58+30, ly+34);
+    ly += 60;
+  });
+}
+
+// ===================== TICKER =====================
+const tickerData = [
+  {sym:'BTC/USD', val:()=>state.btcPrice, change:+2.3},
+  {sym:'ETH/USD', val:()=>state.assets[2].price, change:-0.8},
+  {sym:'USDT/USD',val:()=>0.9997, change:0},
+  {sym:'USDC/USD',val:()=>1.0001, change:0},
+  {sym:'BTC/USDT',val:()=>(state.btcPrice/1).toFixed(0), change:+2.3},
+];
+function renderTicker() {
+  document.getElementById('tickerBar').innerHTML = tickerData.map(t => {
+    const v = typeof t.val === 'function' ? t.val() : t.val;
+    const cls = t.change > 0 ? 'up' : t.change < 0 ? 'dn' : '';
+    const sign = t.change > 0 ? '+' : '';
+    return `<div class="ticker-item"><strong>${t.sym}</strong> $${parseFloat(v).toLocaleString('en-US',{maximumFractionDigits:4})} <span class="${cls}">${sign}${t.change}%</span></div>&nbsp;&nbsp;·&nbsp;&nbsp;`;
+  }).join('');
+}
+renderTicker();
+setInterval(() => {
+  state.btcPrice += (Math.random()-.49)*20;
+  state.btcPrice = Math.max(90000, Math.min(100000, state.btcPrice));
+  state.assets[2].price = state.btcPrice/28.5;
+  renderTicker();
+  document.getElementById('liveRate') && (document.getElementById('liveRate').textContent = '1 BTC = $' + Math.round(state.btcPrice).toLocaleString());
+}, 4000);
+
+// ===================== NOTIFY =====================
+function notify(icon, title, sub) {
+  document.getElementById('notifIcon').textContent = icon;
+  document.getElementById('notifTitle').textContent = title;
+  document.getElementById('notifSub').textContent = sub;
+  const n = document.getElementById('notif');
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 4000);
+}
+
+// ===================== THEME =====================
+const themeBtn = document.getElementById('themeBtn');
+themeBtn.addEventListener('click', () => {
+  state.theme = state.theme==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  themeBtn.textContent = state.theme==='dark'?'🌙':'☀️';
+  setTimeout(()=>{ drawChart(); drawPie(); }, 50);
+});
+
+// ===================== MOBILE MENU =====================
+const menuBtn = document.getElementById('menuBtn');
+const sidebar = document.getElementById('sidebar');
+if (window.innerWidth < 768) { menuBtn.style.display='flex'; }
+menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+// Alert btn
+document.getElementById('alertBtn').addEventListener('click', () => {
+  state.alertCount = 0;
+  document.getElementById('alertCount').textContent = '0';
+  notify('🔔','No new alerts','All risk monitors are normal.');
+});
+
+// ===================== INIT =====================
+renderDashboard();
+setTimeout(()=>{ notify('👋','Welcome to VaultSwitch','Tap "⚡ Panic Convert" to try the full flow!'); }, 800);
+</script>
+</body>
+</html>
