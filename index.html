@@ -290,6 +290,8 @@ h2{font-size:1.3rem;font-weight:900;margin-bottom:.25rem;}
           <div class="ni-icon">⚡</div>Panic Convert
           <span class="ni-badge" id="panicBadge">!</span>
         </div>
+              <div class="nav-item" data-page="converter">
+                        <div class="ni-icon">💱</div>Currency Converter
       </div>
       <div class="nav-group">
         <div class="nav-group-label">Account</div>
@@ -400,7 +402,12 @@ h2{font-size:1.3rem;font-weight:900;margin-bottom:.25rem;}
       <div class="g6" id="panicContent"></div>
     </div>
 
-    <!-- HISTORY PAGE -->
+    <!-- HISTOR
+    
+    <!-- CONVERTER PAGE -->
+    <div class="page" id="page-converter">
+      <div class="g6" id="converterContent"></div>
+    </div>Y PAGE -->
     <div class="page" id="page-history">
       <div class="card">
         <div class="row" style="margin-bottom:1.25rem;">
@@ -510,15 +517,16 @@ function calcRoutes() {
 
 // ===================== NAVIGATION =====================
 const pages = { dashboard:'Dashboard', assets:'My Assets', panic:'Panic Convert', history:'Transfer History', settings:'Settings' };
-const subs  = { dashboard:'Virtual wallet overview', assets:'Manage your demo assets', panic:'Emergency BTC conversion', history:'All past transfers', settings:'Configure vault & preferences' };
+const subs  = { dashboard:'Virtual wallet overview', assets:'Manage your demo assets', panic:'Emergency BTC conversion', converter:'Live exchange rates', history:'All past transfers', settings:'Configure vault & preferences' };
 
 function goPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));, converter:'Currency Converter'
   document.querySelector('#page-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === id));
   document.getElementById('pageTitle').textContent = pages[id];
   document.getElementById('pageSub').textContent   = subs[id];
   if (id === 'panic')   renderPanic();
+    if (id === 'converter') renderConverter();
   if (id === 'assets')  renderAssets();
   if (id === 'history') renderHistory();
   if (id === 'dashboard') renderDashboard();
@@ -985,6 +993,87 @@ document.getElementById('alertBtn').addEventListener('click', () => {
 // ===================== INIT =====================
 renderDashboard();
 setTimeout(()=>{ notify('👋','Welcome to VaultSwitch','Tap "⚡ Panic Convert" to try the full flow!'); }, 800);
+
+  // ===================== CURRENCY CONVERTER PAGE & FUNCTIONS =====================
+  // First add converter to pages and subs objects:
+// In line ~514: const pages = { ..., converter:'Currency Converter', ... };
+// In line ~515: const subs = { ..., converter:'Live exchange rates', ... };
+
+// Currency exchange rates (you can replace with API)
+const exchangeRates = {
+  IRR: { USD: 0.000024, CAD: 0.000032, AED: 0.000088, rate: 1 },
+  USD: { IRR: 42000, CAD: 1.35, AED: 3.67, rate: 1 },
+  CAD: { IRR: 31100, USD: 0.74, AED: 2.72, rate: 1 },
+  AED: { IRR: 11430, USD: 0.27, CAD: 0.37, rate: 1 }
+};
+
+  function convertCurrency(amount, from, to) {
+  if (from === to) return amount;
+  return amount * exchangeRates[from][to];
+}
+
+function renderConverter() {
+  document.getElementById('converterContent').innerHTML = `
+    <div class="card">
+      <h2>Currency Converter</h2>
+      <div class="muted" style="margin-bottom:1.5rem;">Convert between Iranian Rial (IRR), US Dollar (USD), Canadian Dollar (CAD), and UAE Dirham (AED)</div>
+      
+      <div class="grid2" style="margin-bottom:1.5rem;">
+        <div>
+          <label>From Currency</label>
+          <select class="inp" id="fromCurrency" style="margin-top:.4rem;" onchange="calculateConversion()">
+            <option value="IRR">🇮🇷 Iranian Rial (IRR)</option>
+            <option value="USD">🇺🇸 US Dollar (USD)</option>
+            <option value="CAD">🇨🇦 Canadian Dollar (CAD)</option>
+            <option value="AED">🇦🇪 UAE Dirham (AED)</option>
+          </select>
+        </div>
+        <div>
+          <label>To Currency</label>
+          <select class="inp" id="toCurrency" style="margin-top:.4rem;" onchange="calculateConversion()">
+            <option value="USD">🇺🇸 US Dollar (USD)</option>
+            <option value="CAD">🇨🇦 Canadian Dollar (CAD)</option>
+            <option value="AED">🇦🇪 UAE Dirham (AED)</option>
+            <option value="IRR">🇮🇷 Iranian Rial (IRR)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="margin-bottom:1.5rem;">
+        <label>Amount</label>
+        <input class="inp" type="number" id="amount" placeholder="Enter amount" value="1000" oninput="calculateConversion()" style="margin-top:.4rem;">
+      </div>
+      
+      <div class="card-sm" style="background:color-mix(in oklab,var(--pr) 12%,var(--s2));border:2px solid var(--pr);">
+        <div style="font-size:.8rem;color:var(--mu);margin-bottom:.5rem;">Converted Amount</div>
+        <div id="result" style="font-size:2rem;font-weight:900;color:var(--pr);">0.00</div>
+        <div id="rateInfo" style="font-size:.85rem;color:var(--mu);margin-top:.5rem;">1 IRR = 0.000024 USD</div>
+      </div>
+      
+      <button class="btn btn-pr btn-full" style="margin-top:1.5rem;" onclick="swapCurrencies()">🔄 Swap Currencies</button>
+    </div>
+  `;
+  calculateConversion();
+}
+
+function calculateConversion() {
+  const amount = parseFloat(document.getElementById('amount').value) || 0;
+  const from = document.getElementById('fromCurrency').value;
+  const to = document.getElementById('toCurrency').value;
+  const result = convertCurrency(amount, from, to);
+  document.getElementById('result').textContent = result.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const rate = exchangeRates[from][to];
+  document.getElementById('rateInfo').textContent = `1 ${from} = ${rate.toLocaleString('en-US', {minimumFractionDigits:6, maximumFractionDigits:6})} ${to}`;
+}
+
+function swapCurrencies() {
+  const from = document.getElementById('fromCurrency');
+  const to = document.getElementById('toCurrency');
+  const temp = from.value;
+  from.value = to.value;
+  to.value = temp;
+  calculateConversion();
+}
 </script>
 </body>
 </html>
